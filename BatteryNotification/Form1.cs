@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Security.Policy;
 using System.Windows.Forms;
 using Timer = System.Windows.Forms.Timer;
 
@@ -20,7 +21,7 @@ namespace BatteryNotification
             notifyIcon1.ContextMenuStrip = contextMenu;
 
             timer = new Timer();
-            timer.Interval = 60000; // Update every 60 seconds
+            timer.Interval = 10000; // Update every 10 seconds
             timer.Tick += Timer_Tick;
             timer.Start();
             UpdateBatteryPercentage();
@@ -46,25 +47,28 @@ namespace BatteryNotification
 
         private Icon GenerateBatteryIcon(int percentage)
         {
-            Bitmap bitmap = new Bitmap(18, 18); // Create a slightly larger bitmap to be scaled down
+            int size = 24; // Size in pixels
+            Bitmap bitmap = new Bitmap(size, size);
             using (Graphics g = Graphics.FromImage(bitmap))
             {
-                g.Clear(Color.Transparent);
+                Rectangle circleArea = new Rectangle(0, 0, size, size);
+                if (IsOnACPower())
+                {
+                    g.FillEllipse(Brushes.Green, circleArea);
+                }
+                else
+                {
+                    g.FillEllipse(Brushes.Gray, circleArea);
+                }
                 //g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias; // Enable anti-aliasing
                 string text = percentage.ToString();
                 Font font = new Font("Tahoma", 7, FontStyle.Regular);
                 SizeF textSize = g.MeasureString(text, font);
-                float x = (16 - textSize.Width) / 2;
-                float y = (16 - textSize.Height) / 2;
+                float x = (size - textSize.Width) / 2;
+                float y = (size - textSize.Height) / 2;
                 g.DrawString(text, font, Brushes.White, new PointF(x, y));
             }
             return Icon.FromHandle(bitmap.GetHicon());
-        }
-
-        private void UpdateIcon()
-        {
-            //TODO: Add icons for AC power and battery power
-            //notifyIcon1.Icon = IsOnACPower() ? acIcon : batteryIcon;
         }
 
         public static bool IsOnACPower()
