@@ -1,6 +1,6 @@
 using System;
 using System.Drawing;
-using System.Security.Policy;
+using System.Reflection;
 using System.Windows.Forms;
 using Timer = System.Windows.Forms.Timer;
 
@@ -10,6 +10,7 @@ namespace BatteryNotification
     {
         private Timer timer;
         private ContextMenuStrip contextMenu;
+        private const string MessageBoxCaption = "Battery Notification";
 
         public Form1()
         {
@@ -17,6 +18,8 @@ namespace BatteryNotification
             notifyIcon1.Visible = true;
             notifyIcon1.MouseClick += NotifyIcon1_MouseClick;
             contextMenu = new ContextMenuStrip();
+            contextMenu.Items.Add("About...", null, About_Click);
+            contextMenu.Items.Add(new ToolStripSeparator());
             contextMenu.Items.Add("Exit", null, Exit_Click);
             notifyIcon1.ContextMenuStrip = contextMenu;
 
@@ -39,9 +42,18 @@ namespace BatteryNotification
 
         private void UpdateBatteryPercentage()
         {
+            String batteryMessage = "";
+            if (IsOnACPower())
+            {
+                batteryMessage = "(plugged in)";
+            }
+            else
+            {
+                batteryMessage = "(unplugged)";
+            }
             var powerStatus = SystemInformation.PowerStatus;
             int batteryPercentage = (int)(powerStatus.BatteryLifePercent * 100);
-            notifyIcon1.Text = $"Battery: {batteryPercentage}%";
+            notifyIcon1.Text = $"Battery: {batteryPercentage}% available {batteryMessage}";
             notifyIcon1.Icon = GenerateBatteryIcon(batteryPercentage);
         }
 
@@ -54,7 +66,7 @@ namespace BatteryNotification
                 Rectangle circleArea = new Rectangle(0, 0, size, size);
                 if (IsOnACPower())
                 {
-                    g.FillEllipse(Brushes.Green, circleArea);
+                    g.FillEllipse(Brushes.RoyalBlue, circleArea);
                 }
                 else
                 {
@@ -62,7 +74,7 @@ namespace BatteryNotification
                 }
                 //g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias; // Enable anti-aliasing
                 string text = percentage.ToString();
-                Font font = new Font("Tahoma", 7, FontStyle.Regular);
+                Font font = new Font("Tahoma", 9, FontStyle.Regular);
                 SizeF textSize = g.MeasureString(text, font);
                 float x = (size - textSize.Width) / 2;
                 float y = (size - textSize.Height) / 2;
@@ -82,6 +94,21 @@ namespace BatteryNotification
             if (e.Button == MouseButtons.Right)
             {
                 contextMenu.Show(Cursor.Position);
+            }
+        }
+
+        private void About_Click(object? sender, EventArgs e)
+        {
+            var entryAssembly = Assembly.GetEntryAssembly();
+            if (entryAssembly != null)
+            {
+                Version version = entryAssembly.GetName().Version ?? new Version(1, 0, 0, 0);
+                string versionString = $"{version.Major}.{version.Minor}.{version.Build}.{version.Revision}";
+                MessageBox.Show($"Battery Notification {versionString}\n\nCopyright (c) 2025 Bryan Candiliere\n\nLicensed under the MIT License.", MessageBoxCaption, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                MessageBox.Show("Battery Notification\n\nCopyright (c) 2025 Bryan Candiliere\n\nLicensed under the MIT License.", MessageBoxCaption, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
